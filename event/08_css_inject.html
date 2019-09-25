@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <script>
+    (function() {
+        var tag = document.createElement('link');
+        tag.href = '/b_5s.css';
+        tag.rel = 'stylesheet';
+        document.head.appendChild(tag);
+    })();
+    </script>
+    <title>CSS-Injectによるブロック解除</title>
+</head>
+<body>
+    <div>この文章はすぐに表示される。</div>
+    <div>「5秒後に」強調表示に変化する。</div>
+</body>

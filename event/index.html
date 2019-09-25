@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <title>WEBパフォーマンス</title>
+</head>
+<body>
+    <div>ブラウザの制約条件から考えるフロントエンドのリソース設計</div>
+    <ol>
+        <li><a href="01_dom.html">DOM構築の状況を見る</a></li>
+        <li>
+            <ul>
+                <li><a href="02_huge_10s.html">巨大なHTMLをTTFB=10秒で転送</a></li>
+                <li><a href="02_huge_10s_g.html">巨大なHTMLを10秒で徐々に転送</a></li>
+            </ul>
+        </li>
+        <li><a href="03_js_dom_block.html">JavaScriptとDOM構築のブロック</a></li>
+        <li><a href="04_script_inject.html">Script-Injectによる&lt;script&gt;タグ生成</a></li>
+        <li><a href="05_css_render_block.html">CSSOM構築によるレンダリングのブロック</a></li>
+        <li><a href="06_css_import_render_block.html">CSSOM構築(@import)によるレンダリングのブロック</a></li>
+        <li><a href="07_css_in_body.html">CSSを&lt;body&gt;タグ内で読み込む</a></li>
+        <li><a href="08_css_inject.html">CSS-InjectによるCSS読み込み</a></li>
+        <li><a href="09_css_media_query.html">メディアクエリをprintとしてCSS読み込み</a></li>
+        <li><a href="10_js_css.html">CSSとJavaScript読み込み</a></li>
+        <li><a href="11_script_inject_css.html">CSS読み込みとScript-Inject</a></li>
+        <li><a href="12_js_script_inject.html">JavaScriptを通常読込⇒Script-Inject</a></li>
+        <li><a href="13_js_js.html">JavaScriptを通常読込⇒通常読込</a></li>
+        <li><a href="14_js_async.html">JavaScriptをasync指定</a></li>
+        <li><a href="15_js_defer.html">JavaScriptをdefer指定</a></li>
+        <li><a href="16_inline_js_dom_block.html">インライン&lt;script&gt;によるDOM構築ブロック</a></li>
+        <li><a href="17_inline_js_async.html">インライン&lt;script&gt;の非同期化</a></li>
+    </ol>
+</body>

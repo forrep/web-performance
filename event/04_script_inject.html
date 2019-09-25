@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <script>
+    (function() {
+        var tag = document.createElement('script');
+        tag.src = '/t_5s.js';
+        document.head.appendChild(tag);
+    })();
+    </script>
+    <title>Script-Injectによる非同期化</title>
+</head>
+<body>
+    <div>Script-InjectはDOM構築をブロックしないので、この文章はすぐに表示される。</div>
+    <div>「5秒後」にJavaScriptが実行される</div>
+</body>
