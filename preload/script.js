@@ -1,0 +1,1 @@
+manager.getChecker('script').loaded();

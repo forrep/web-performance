@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8">
+    <title>Preload Scanner 動作確認</title>
+    <style>
+        .blinking{
+            animation: blink 1.0s linear infinite normal;
+        }
+        @keyframes blink{
+            50%  {opacity: 0;}
+        }
+        ul {
+            margin-bottom: 1em;
+            list-style: none;
+        }
+    </style>
+    <script>
+        var manager = new function() {
+            var start = null;
+            var interval = 200;
+            var checkers = [];
+            var checkElement = function(checkerName) {
+                var element = document.getElementById(checkerName + '_checker');
+                if (element == undefined || element.clientWidth != 2 || element.clientHeight != 2) {
+                    return false;
+                }
+                else {
+                    printResult(checkerName);
+                    return true;
+                }
+            };
+            var printResult = function(checkerName) {
+                var resultMessage = start === null || performance.now() - start <= 3000 ? '○ 対応' : '× 未対応';
+                var element = document.getElementById(checkerName + '_result');
+                if (element == undefined) {
+                    document.addEventListener("DOMContentLoaded", function() {
+                        document.getElementById(checkerName + '_result').innerHTML = resultMessage;
+                    });
+                }
+                else {
+                    document.getElementById(checkerName + '_result').innerHTML = resultMessage;
+                }
+            };
+            checkers.push(new function() {
+                var resource_loaded = false;
+                return {
+                    name: "script",
+                    loaded: function() { resource_loaded = true },
+                    check: function() {
+                        if (!resource_loaded) {
+                            return false;
+                        }
+                        else {
+                            printResult(this.name);
+                            return true;
+                        }
+                    }
+                }
+            });
+            checkers.push(new function() {
+                var resource_loaded = false;
+                return {
+                    name: "script_async",
+                    loaded: function() { resource_loaded = true },
+                    check: function() {
+                        if (!resource_loaded) {
+                            return false;
+                        }
+                        else {
+                            printResult(this.name);
+                            return true;
+                        }
+                    }
+                }
+            });
+            checkers.push(new function() {
+                var resource_loaded = false;
+                return {
+                    name: "iframe",
+                    loaded: function() { resource_loaded = true },
+                    check: function() {
+                        if (!resource_loaded) {
+                            return false;
+                        }
+                        else {
+                            printResult(this.name);
+                            return true;
+                        }
+                    }
+                }
+            });
+            checkers.push(new function() {
+                return {
+                    name: "style",
+                    check: checkElement.bind(null, "style")
+                }
+            });
+            checkers.push(new function() {
+                return {
+                    name: "style_import",
+                    check: checkElement.bind(null, "style_import")
+                }
+            });
+            checkers.push(new function() {
+                return {
+                    name: "style_import_import",
+                    check: checkElement.bind(null, "style_import_import")
+                }
+            });
+            checkers.push(new function() {
+                document.addEventListener("DOMContentLoaded", function() {
+                    document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="style_preload_4s.css">')
+                });
+                return {
+                    name: "style_preload",
+                    check: checkElement.bind(null, "style_preload")
+                }
+            });
+            checkers.push(new function() {
+                return {
+                    name: "image",
+                    check: checkElement.bind(null, "image")
+                }
+            });
+            checkers.push(new function() {
+                var diffOngoing = 0;
+                return {
+                    name: "font",
+                    check: function() {
+                        var checker1 = document.getElementById('font_checker_1');
+                        var checker2 = document.getElementById('font_checker_2');
+                        if (checker1 == undefined || checker2 == undefined) {
+                            return false;
+                        }
+                        if (checker1.offsetWidth != checker2.offsetWidth) {
+                            if (diffOngoing == 0) {
+                                diffOngoing = performance.now();
+                            }
+                        }
+                        else {
+                            diffOngoing = 0;
+                        }
+                        if (diffOngoing > 0 && performance.now() - diffOngoing >= 1200) {
+                            // 1200ms以上継続して2つのWebフォントの横幅が変わる状態になったら
+                            // 少なくともどちらかのWebフォントが読み込まれたと判断
+                            printResult(this.name);
+                            return true;
+                        }
+                        else {
+                            return false;
+                        }
+                    }
+                }
+            });
+            allCheckers = checkers.filter(function(){return true});
+            var checkManager = function() {
+                checkers = checkers.filter(function(checker) { return !checker.check() });
+                if (checkers.length > 0) {
+                    setTimeout(checkManager, interval);
+                }
+            };
+            setTimeout(checkManager, interval);
+
+            return {
+                domStart: function() { start = performance.now() },
+                getChecker: function(name) {
+                    return allCheckers.filter(function(checker) { return checker.name === name })[0];
+                }
+            };
+        };
+    </script>
+
+    <!-- ここでDOM構築を20秒間停止させる -->
+    <script src="stop_here_20s.js"></script>
+
+    <script src="script_4s.js"></script>
+    <script src="script_async_4s.js" async></script>
+    <link rel="stylesheet" href="style_4s.css">
+    <style>
+        @import url('style_import_4s.css');
+        @import url('style_import_import_4s.css');
+    </style>
+    <style>
+        @font-face {
+            font-family: "original_font_${now}_1";
+            src: url('font/trim_4s.woff2') format('woff2'),
+                url('font/trim_4s.woff')  format('woff'),
+                url('font/trim_4s.ttf')   format('truetype'),
+                url('font/trim_4s.eot')  format('embedded-opentype');
+        }
+        @font-face {
+            font-family: "original_font_${now}_2";
+            src: url("font/typed_4s.woff2") format('woff2'),
+                url("font/typed_4s.woff")  format('woff'),
+                url("font/typed_4s.ttf")   format('truetype'),
+                url("font/typed_4s.eot")  format('embedded-opentype');
+        }
+    </style>
+    <link rel="preload" href="style_preload_4s.css" as="style">
+</head>
+<body>
+    <div style="position: absolute; width: 100px; height: 100px; top: -2000px;">
+        <div id="style_checker"></div>
+        <div id="style_import_checker"></div>
+        <div id="style_import_import_checker"></div>
+        <div id="style_preload_checker"></div>
+        <img id="image_checker" src="ffffff_4s.png">
+        <iframe src="iframe_4s.html"></iframe>
+        <div id="font_checker_1" style="position: fixed; font-size: 33px; font-family: original_font_${now}_1;">0123456789abcABC.-_?</div>
+        <div id="font_checker_2" style="position: fixed; font-size: 33px; font-family: original_font_${now}_2;">0123456789abcABC.-_?</div>
+    </div>
+
+    <h1>Preload Scanner 動作確認</h1>
+    <ul>
+        <li>&lt;script src="path_to_script"&gt;</li>
+        <ul><li id="script_result"><span class="blinking">？ 判定中</span></li></ul>
+
+        <li>&lt;script src="path_to_script" async&gt;</li>
+        <ul><li id="script_async_result"><span class="blinking">？ 判定中</span></li></ul>
+
+        <li>&lt;link rel="stylesheet" href="path_to_style"&gt;</li>
+        <ul><li id="style_result"><span class="blinking">？ 判定中</span></li></ul>
+
+        <li>&lt;style&gt; @import url('path_to_style'); &lt;/style&gt;</li>
+        <ul><li id="style_import_result"><span class="blinking">？ 判定中</span></li></ul>
+
+        <li>&lt;style&gt; @import url('path_to_style_1'); @import url('path_to_style_2') &lt;/style&gt;</li>
+        <ul><li id="style_import_import_result"><span class="blinking">？ 判定中</span></li></ul>
+
+        <li>&lt;link rel="preload" href="path_to_style" as="style"&gt;</li>
+        <ul><li id="style_preload_result"><span class="blinking">？ 判定中</span></li></ul>
+
+        <li>&lt;img src="path_to_image"&gt;</li>
+        <ul><li id="image_result"><span class="blinking">？ 判定中</span></li></ul>
+
+        <li>&lt;iframe src="path_to_html"&gt;</li>
+        <ul><li id="iframe_result"><span class="blinking">？ 判定中</span></li></ul>
+
+        <li>&lt;style&gt; @font-face { src: url('path_to_font') } &lt;/style&gt;</li>
+        <ul><li id="font_result"><span class="blinking">？ 判定中</span></li></ul>
+    </ul>
+
+</body>

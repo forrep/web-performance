@@ -7,7 +7,20 @@ const url = require('url');
 
 const delayRegexp = /_([0-9]+)s(?=[._])/;
 const graduallyRegexp = /_g(?=[._])/;
-const defaultContentType = 'text/html';
+const defaultContentType = 'text/plain';
+const contentTypePattern = {
+    "html" : "text/html",
+    "js"   : "text/javascript",
+    "css"  : "text/css",
+    "jpg"  : "image/jpeg",
+    "jpeg" : "image/jpeg",
+    "gif"  : "image/gif",
+    "png"  : "image/png",
+    "woff" : "application/font-woff",
+    "woff2": "application/font-woff2",
+    "ttf"  : "font/truetype",
+    "eot"  : "application/vnd.ms-fontobject",
+};
 
 const basePath = path.dirname(process.argv[1]);
 const server = http.createServer();
@@ -26,34 +39,25 @@ if (process.argv.length >= 4) {
     host = process.argv[3];
 }
 
-const requestIdMax = 100;
+const requestIdMax = 1000;
 let requestIdManager = 0;
+const toLoggingId = (requestId) => {
+    return '[' + '0'.repeat((''+(requestIdMax-1)).length - (''+requestId).length) +  requestId + ']'
+};
 
 const handleRequest = (requestId, response, requestPath, delay, gradually, failOver) => {
-    Promise.all(['', '/css', '/js'].map((subPath) => {
-        return new Promise((resolve, reject) => {
-            fs.access(basePath + subPath + requestPath, (err) => {
-                if (err) {
-                    resolve(false);
-                }
-                else {
-                    resolve(subPath);
-                }
-            });
-        })
-    })).then((subPathes) => {
-        let subPath = false;
-        for (let i = 0; i < subPathes.length; ++i) {
-            if (subPathes[i] !== false) {
-                subPath = subPathes[i];
-                break;
+    new Promise((resolve, reject) => {
+        fs.access(basePath + requestPath, (err) => {
+            if (err) {
+                reject(err);
             }
-        }
-        if (subPath === false) {
-            return Promise.reject();
-        }
+            else {
+                resolve();
+            }
+        });
+    }).then(() => {
         return new Promise((resolve, reject) => {
-            fs.readFile(basePath + subPath + requestPath, 'utf8', (err, data) => {
+            fs.readFile(basePath + requestPath, (err, data) => {
                 if (err) {
                     reject(err);
                 }
@@ -68,30 +72,33 @@ const handleRequest = (requestId, response, requestPath, delay, gradually, failO
         let sentLogged = 0;
         let sentHeader = false;
         let interval = Math.min(Math.floor(delay / 100), 50);
+        let contentType = defaultContentType;
+        for (let key in contentTypePattern) {
+            if (requestPath.endsWith("." + key)) {
+                contentType = contentTypePattern[key];
+                break;
+            }
+        };
+        if (contentType.startsWith('text/')) {
+            data = Buffer.from(data.toString('utf8').replace(/\${now}/g, Date.now()), 'utf8');
+        }
         let sender = () => {
             let now = Date.now();
             let elapsed = now - start < 0 ? 0 : now - start;
             let progress = elapsed >= delay ? data.length : Math.floor(data.length / delay * elapsed);
             if (!sentHeader) {
-                let contentType = defaultContentType;
-                if (requestPath.endsWith(".css")) {
-                    contentType = 'text/css';
-                }
-                else if(requestPath.endsWith(".js")) {
-                    contentType = 'application/javascript';
-                }
                 response.writeHead(200, {
                     'Content-Type': contentType,
                     'Cache-Control': 'no-cache',
-                    'Transfer-Encoding': 'chunked'
+                    'Content-Length': data.length
                 });
                 sentHeader = true;
             }
             if (progress > sent) {
-                response.write(data.substring(sent, progress), 'utf8', () => {
+                response.write(data.slice(sent, progress), () => {
                     if (progress >= (Math.floor(sentLogged / data.length * 10) + 1) / 10 * data.length) {
                         let progressRatio = Math.floor(100 * progress / data.length);
-                        console.log(' '.repeat((new Date()).toString().length) + ' [' + '0'.repeat((''+requestIdMax).length - (''+requestId).length) +  requestId + '] ' + requestPath + ' sent: ' + (progressRatio >= 100 ? 'completed (' + elapsed + 'ms)' : progressRatio + '%'))
+                        console.log(' '.repeat((new Date()).toString().length + 1) + toLoggingId(requestId) + ' ' + requestPath + ' sent: ' + (progressRatio >= 100 ? 'completed (' + elapsed + 'ms)' : progressRatio + '%'))
                         sentLogged = progress;
                     }
                 });
@@ -112,7 +119,7 @@ const handleRequest = (requestId, response, requestPath, delay, gradually, failO
         else {
             response.writeHead(404, {'Content-Type': defaultContentType});
             response.write('Not Found', 'utf8', () => {
-                console.log(' '.repeat((new Date()).toString().length) + ' [' + '0'.repeat((''+requestIdMax).length - (''+requestId).length) +  requestId + '] ' + requestPath + ' 404 Not Found')
+                console.log(' '.repeat((new Date()).toString().length + 1) + toLoggingId(requestId) + ' ' + requestPath + ' 404 Not Found')
             });
             response.end();
         }
@@ -122,19 +129,19 @@ server.on('request', (request, response) => {
     let requestId = (++requestIdManager) % requestIdMax;
     let requestPath = url.parse(request.url).pathname;
     let delay = 0;
-    let gradually = false;
     let delayMatch = requestPath.match(delayRegexp);
     if (delayMatch) {
         requestPath = requestPath.replace(delayRegexp, '');
         delay = Number(delayMatch[1] * 1000);
     }
+    let gradually = false;
     let graduallyMatch = requestPath.match(graduallyRegexp);
     if (graduallyMatch) {
         requestPath = requestPath.replace(graduallyMatch, '');
         gradually = true;
     }
 
-    console.log(new Date() + ' [' + '0'.repeat((''+requestIdMax).length - (''+requestId).length) +  requestId  + '] ' + requestPath + ' (delay=' + delay + 'ms' + (gradually ? ' gradually' : '') + ')');
+    console.log(new Date() + ' ' + toLoggingId(requestId) + ' ' + requestPath + ' (delay=' + delay + 'ms' + (gradually ? ' gradually' : '') + ')');
     handleRequest(requestId, response, requestPath, delay, gradually, requestPath.endsWith('/'));
 });
 server.listen(port, host, () => {
