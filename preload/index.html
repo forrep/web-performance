@@ -108,6 +108,12 @@
                 }
             });
             checkers.push(new function() {
+                return {
+                    name: "style_nested_import",
+                    check: checkElement.bind(null, "style_nested_import")
+                }
+            });
+            checkers.push(new function() {
                 document.addEventListener("DOMContentLoaded", function() {
                     document.head.insertAdjacentHTML('beforeend', '<link rel="stylesheet" href="style_preload_4s.css">')
                 });
@@ -175,6 +181,7 @@
 
     <script src="script_4s.js"></script>
     <script src="script_async_4s.js" async></script>
+    <link rel="stylesheet" href="style_nested.css">
     <link rel="stylesheet" href="style_4s.css">
     <style>
         @import url('style_import_4s.css');
@@ -203,6 +210,7 @@
         <div id="style_checker"></div>
         <div id="style_import_checker"></div>
         <div id="style_import_import_checker"></div>
+        <div id="style_nested_import_checker"></div>
         <div id="style_preload_checker"></div>
         <img id="image_checker" src="ffffff_4s.png">
         <iframe src="iframe_4s.html"></iframe>
@@ -227,6 +235,9 @@
         <li>&lt;style&gt; @import url('path_to_style_1'); @import url('path_to_style_2') &lt;/style&gt;</li>
         <ul><li id="style_import_import_result"><span class="blinking">？ 判定中</span></li></ul>
 
+        <li>&lt;link rel="stylesheet" href="path_to_style"&gt; - @import url('path_to_nested_style');</li>
+        <ul><li id="style_nested_import_result"><span class="blinking">？ 判定中</span></li></ul>
+
         <li>&lt;link rel="preload" href="path_to_style" as="style"&gt;</li>
         <ul><li id="style_preload_result"><span class="blinking">？ 判定中</span></li></ul>
 
@@ -239,5 +250,6 @@
         <li>&lt;style&gt; @font-face { src: url('path_to_font') } &lt;/style&gt;</li>
         <ul><li id="font_result"><span class="blinking">？ 判定中</span></li></ul>
     </ul>
+    <div>当ツールの動作確認ブラウザ: Chrome78, Safari13, Firefox70-71, Opera65, Microsoft Edge44</div>
 
 </body>
